@@ -33,7 +33,7 @@ impl<'a> BlockMiner<'a> {
         Self {
             header_work_hash,
             timestamp,
-            nonce: 922337203685477580, // manually set nounce for this instance
+            nonce: 1106804644422573096, // manually set nounce for this instance
             miner: None,
             extra_nonce: [0u8; EXTRA_NONCE_SIZE],
             cache: None
@@ -89,7 +89,7 @@ impl<'a> BlockMiner<'a> {
 
     #[inline(always)]
     pub fn set_thread_id(&mut self, id: u8) {
-        self.nonce = 922337203685477580 +id as u64;
+        self.nonce = 1106804644422573096 +id as u64;
         self.extra_nonce[EXTRA_NONCE_SIZE - 1] = id;
     }
 
