@@ -413,24 +413,21 @@ fn start_thread(id: u8, mut job_receiver: broadcast::Receiver<ThreadNotification
                         }
                     };
 
-                    //solve block
-                    let mut nonce_counter = 0;//adding is cheaper than division
-                    loop {
-                        hash = job.get_pow_hash(&mut scratch_pad).unwrap();
-                        if check_difficulty_against_target(&hash, &difficulty_target) {
-                                break; // Success, exit loop
-                        } else {
-                            nonce_counter += 1;
-                            if nonce_counter == UPDATE_EVERY_NONCE {
-                                if !job_receiver.is_empty() {
-                                    break; // Check for new job
-                                }
-                                nonce_counter = 0; // Reset counter
-                                HASHRATE_COUNTER.fetch_add(UPDATE_EVERY_NONCE as usize, Ordering::SeqCst);
-                                job.set_timestamp(get_current_time_in_millis());
+                    // Solve block
+                    hash = job.get_pow_hash(&mut scratch_pad).unwrap();
+                    while !check_difficulty_against_target(&hash, &difficulty_target) {
+                        job.increase_nonce(threads);
+                        // check if we have a new job pending
+                        // Only update every N iterations to avoid too much CPU usage
+                        if job.nonce() % UPDATE_EVERY_NONCE == 0 {
+                            if !job_receiver.is_empty() {
+                                continue 'main;
                             }
-                            job.increase_nonce(threads);
+                            job.set_timestamp(get_current_time_in_millis());
+                            HASHRATE_COUNTER.fetch_add(UPDATE_EVERY_NONCE as usize, Ordering::SeqCst);
                         }
+
+                        hash = job.get_pow_hash(&mut scratch_pad).unwrap();
                     }
 
                     // compute the reference hash for easier finding of the block
